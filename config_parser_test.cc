@@ -41,13 +41,13 @@ protected:
 
 //test invalid inputs
 TEST_F(NginxStringConfigTest, InvalidConfig) {
-    EXPECT_FALSE(parseString("foo bar"));
-    EXPECT_FALSE(parseString("foo {\n}"));
-    EXPECT_FALSE(parseString("foo {\n\tx;\n};"));
-    EXPECT_FALSE(parseString("foo \"bar; "));
-    EXPECT_FALSE(parseString("foo \'bar; "));
-    EXPECT_FALSE(parseString("server {listen 80;")); //fixed mismatched curly braces
-    EXPECT_FALSE(parseString("server listen 80;}"));
+    EXPECT_FALSE(parseString("foo bar")); //no semicolon
+    EXPECT_FALSE(parseString("foo {\n}")); //empty curly braces; must have been an error? debatable
+    EXPECT_FALSE(parseString("foo {\n\tx;\n};")); //semicolon after a brace
+    EXPECT_FALSE(parseString("foo \"bar; ")); //mismatched quotes
+    EXPECT_FALSE(parseString("foo \'bar; ")); //mismatched single quotes
+    EXPECT_FALSE(parseString("server {listen 80;")); //mismatched curly braces
+    EXPECT_FALSE(parseString("server listen 80;}")); //mismatched curly braces
 }
 
 //test basic valid configs
