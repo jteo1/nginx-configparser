@@ -59,13 +59,22 @@ http {
     server 192.168.0.1:8001;
   }
 
-  server { # simple load balancing
-    listen          80;
-    server_name     big.server.com;
-    access_log      logs/big.server.access.log main;
+  server {
+        listen 80 default_server;
+        listen [::]:80 default_server ipv6only=on;
 
-    location / {
-      proxy_pass      http://big_server_com;
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+
+        # Make site accessible from http://localhost/
+        server_name localhost;
+
+        location / {
+                # First attempt to serve request as file, then
+                # as directory, then fall back to displaying a 404.
+                try_files $uri $uri/ /index.html;
+                # Uncomment to enable naxsi on this location
+                # include /etc/nginx/naxsi.rules
+        }
     }
-  }
 }

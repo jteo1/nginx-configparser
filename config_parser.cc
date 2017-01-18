@@ -152,6 +152,7 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
   config_stack.push(config);
   TokenType last_token_type = TOKEN_TYPE_START;
   TokenType token_type;
+  int bracket_count = 0;
   while (true) {
     std::string token;
     token_type = ParseToken(config_file, &token);
@@ -190,6 +191,7 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
         break;
       }
     } else if (token_type == TOKEN_TYPE_START_BLOCK) {
+      bracket_count++;
       if (last_token_type != TOKEN_TYPE_NORMAL) {
         // Error.
         break;
@@ -199,16 +201,26 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
           new_config);
       config_stack.push(new_config);
     } else if (token_type == TOKEN_TYPE_END_BLOCK) {
-      if (last_token_type != TOKEN_TYPE_STATEMENT_END && last_token_type != TOKEN_TYPE_END_BLOCK) { //FIXED
+      bracket_count--;
+      if (last_token_type != TOKEN_TYPE_STATEMENT_END && last_token_type != TOKEN_TYPE_END_BLOCK) { //allow two consecutive end block tockens
         // Error.
         break;
       }
+      //no matching '{' with this current '}'
+      else if(bracket_count < 0) {
+        break;
+      }
       config_stack.pop();
+
     } else if (token_type == TOKEN_TYPE_EOF) {
       if (last_token_type != TOKEN_TYPE_STATEMENT_END &&
           last_token_type != TOKEN_TYPE_END_BLOCK) {
         // Error.
         break;
+      }
+      //open '{' token found, no closing bracket
+      if(bracket_count != 0) {
+          break;
       }
       return true;
     } else {
@@ -218,9 +230,16 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
     last_token_type = token_type;
   }
 
-  printf ("Bad transition from %s to %s\n",
-          TokenTypeAsString(last_token_type),
-          TokenTypeAsString(token_type));
+  if(bracket_count < 0) {
+      printf("Mismatched brackets found, extra \'}\' token(s)\n");
+  }
+  else if(bracket_count > 0) {
+      printf("Mismatched brackets found, extra \'{\' token(s)\n");
+  } else {
+      printf ("Bad transition from %s to %s\n",
+              TokenTypeAsString(last_token_type),
+              TokenTypeAsString(token_type));
+  }
   return false;
 }
 

@@ -17,7 +17,7 @@ TEST(NginxConfigParserTest, NestedConfig) {
   bool success = parser.Parse("config_with_nested", &out_config);
 
   EXPECT_EQ(out_config.statements_.size(), 1);
-  EXPECT_TRUE(success);
+  EXPECT_TRUE(success); //this was fixed to allow nested Configs that end like }}
 }
 
 TEST(NginxConfigParserTest, LargeConfig) {
@@ -42,11 +42,16 @@ protected:
 //test invalid inputs
 TEST_F(NginxStringConfigTest, InvalidConfig) {
     EXPECT_FALSE(parseString("foo bar"));
-    //EXPECT_FALSE(parseString("server {listen 80;")); //TODO: fix this!
+    EXPECT_FALSE(parseString("foo {\n}"));
+    EXPECT_FALSE(parseString("foo {\n\tx;\n};"));
+    EXPECT_FALSE(parseString("foo \"bar; "));
+    EXPECT_FALSE(parseString("foo \'bar; "));
+    EXPECT_FALSE(parseString("server {listen 80;")); //fixed mismatched curly braces
+    EXPECT_FALSE(parseString("server listen 80;}"));
 }
 
 //test basic valid configs
-TEST_F(NginxStringConfigTest, SimpleConfigs){
+TEST_F(NginxStringConfigTest, ValidConfigs){
     //test comments read properly
     EXPECT_TRUE(parseString("foo bar; #a comment"));
     EXPECT_EQ(out_config.statements_.size(), 1);
@@ -60,4 +65,5 @@ TEST_F(NginxStringConfigTest, SimpleConfigs){
     EXPECT_EQ(out_config.statements_[0]->tokens_[1], "bar");
     EXPECT_EQ(out_config.statements_[0]->tokens_[2], "x");
     EXPECT_EQ(out_config.statements_[0]->tokens_.size(), 3);
+
 }
