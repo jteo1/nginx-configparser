@@ -203,9 +203,13 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
     } else if (token_type == TOKEN_TYPE_END_BLOCK) {
       bracket_count--;
       //allow two consecutive end block tockens, or no matching '{' with this current '}'
-      if ((last_token_type != TOKEN_TYPE_STATEMENT_END && last_token_type != TOKEN_TYPE_END_BLOCK) || bracket_count < 0) {
+      if (last_token_type != TOKEN_TYPE_STATEMENT_END && last_token_type != TOKEN_TYPE_END_BLOCK) {
         // Error.
         break;
+      }
+      else if (bracket_count < 0) {
+          printf("Mismatched brackets found, extra \'}\' token(s)\n");
+          return false;
       }
 
       config_stack.pop();
@@ -218,7 +222,8 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
       }
       //open '{' token found, no closing bracket
       if(bracket_count != 0) {
-          break;
+          printf("Mismatched brackets found, extra \'{\' token(s)\n");
+          return false;
       }
       return true;
     } else {
@@ -228,16 +233,11 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
     last_token_type = token_type;
   }
 
-  if(bracket_count < 0) {
-      printf("Mismatched brackets found, extra \'}\' token(s)\n");
-  }
-  else if(bracket_count > 0) {
-      printf("Mismatched brackets found, extra \'{\' token(s)\n");
-  } else {
-      printf ("Bad transition from %s to %s\n",
-              TokenTypeAsString(last_token_type),
-              TokenTypeAsString(token_type));
-  }
+
+  printf ("Bad transition from %s to %s\n",
+          TokenTypeAsString(last_token_type),
+          TokenTypeAsString(token_type));
+
   return false;
 }
 
